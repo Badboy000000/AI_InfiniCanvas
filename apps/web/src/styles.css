@@ -105,7 +105,7 @@ button { font: inherit; transition: 160ms ease; }
 .legend-dot.file { background: var(--type-file); }
 .legend-dot.any { background: var(--type-any); border: 1.5px dashed #8a8278; }
 @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-@media (max-width: 960px) { .right-click-menu-preview, .port-type-legend { display: none; } }
+@media (max-width: 960px) { .port-type-legend { display: none; } }
 @media (max-width: 760px) {
   .minimal-topbar { left: 8px; right: 8px; }
   .mini-map-card { left: 6px; bottom: 52px; width: 96px; }

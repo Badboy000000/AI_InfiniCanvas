@@ -1,13 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ConnectionLine } from './ConnectionLine';
 import { CanvasNode } from './CanvasNode';
-import { findPortAtPosition, getOutputPortAnchor, getPortAnchor, isConnectionCompatible, wouldCreateCycle } from '../lib/ports';
-import { computeWorldBounds, screenToWorld, zoomAtPoint, type Viewport } from '../lib/viewport';
+import {
+  findPortAtPosition,
+  getMiniMapViewportRect,
+  getOutputPortAnchor,
+  getPortAnchor,
+  isConnectionCompatible,
+  wouldCreateCycle,
+} from '../lib/ports';
+import { computeWorldBounds, screenToWorld, toCanvasNodes, zoomAtPoint, type Viewport } from '../lib/viewport';
 import type { InputPortDef, LibraryGroup, WorkflowEdge, WorkflowNode } from '../types';
 
 const NODE_WIDTH = 220;
 
-const bottomTools = [
+type ToolConfig = {
+  icon: string;
+  label: string;
+  createType: string | null;
+};
+
+const bottomTools: ToolConfig[] = [
   { icon: '⌖', label: '选择', createType: null },
   { icon: '＋', label: '文本输入', createType: '文本输入' },
   { icon: '◫', label: '图片输入', createType: '图片输入' },
@@ -17,7 +30,7 @@ const bottomTools = [
   { icon: '⟲', label: '连线', createType: null },
   { icon: '↻', label: '重试', createType: null },
   { icon: '◎', label: '定位', createType: null },
-] as const;
+];
 
 type NodePreset = Pick<WorkflowNode, 'title' | 'type' | 'category' | 'resultSummary' | 'dataType' | 'inputPorts'>;
 
@@ -61,9 +74,7 @@ function createNodeFromTool(toolLabel: string, index: number): WorkflowNode {
       category: '生成',
       resultSummary: '等待接入上游输入',
       dataType: 'ai',
-      inputPorts: [
-        { id: 'in-0', label: '输入', dataType: 'text' },
-      ],
+      inputPorts: [{ id: 'in-0', label: '输入', dataType: 'text' }],
     },
     输出节点: {
       title: '新输出节点',
@@ -71,9 +82,7 @@ function createNodeFromTool(toolLabel: string, index: number): WorkflowNode {
       category: '输出',
       resultSummary: '用于归档或导出结果',
       dataType: 'file',
-      inputPorts: [
-        { id: 'in-0', label: '结果', dataType: 'any' as InputPortDef['dataType'] },
-      ],
+      inputPorts: [{ id: 'in-0', label: '结果', dataType: 'any' as InputPortDef['dataType'] }],
     },
   };
 
@@ -125,7 +134,7 @@ export function CanvasStage({
 }) {
   const nodeMap = new Map(nodes.map((node) => [node.id, node]));
   const boardRef = useRef<HTMLDivElement | null>(null);
-  const [activeTool, setActiveTool] = useState<(typeof bottomTools)[number]>(bottomTools[0]);
+  const [activeTool, setActiveTool] = useState<ToolConfig>(bottomTools[0]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const [menuNodeId, setMenuNodeId] = useState<string | null>(null);
@@ -154,23 +163,34 @@ export function CanvasStage({
     return () => observer.disconnect();
   }, []);
 
-  const worldBounds = useMemo(() => computeWorldBounds(nodes), [nodes]);
+  const canvasNodes = useMemo(() => toCanvasNodes(nodes), [nodes]);
+  const worldBounds = useMemo(() => computeWorldBounds(canvasNodes), [canvasNodes]);
 
   const selectedNodeIdRef = useRef(selectedNode?.id ?? '');
   selectedNodeIdRef.current = selectedNode?.id ?? '';
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Delete' || event.key === 'Backspace') {
-        const target = event.target as HTMLElement;
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-        const id = selectedNodeIdRef.current;
-        if (id) {
-          event.preventDefault();
-          onDeleteNode(id);
-        }
+      if (event.key !== 'Delete' && event.key !== 'Backspace') {
+        return;
       }
+
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      const id = selectedNodeIdRef.current;
+      if (!id) {
+        return;
+      }
+
+      event.preventDefault();
+      onDeleteNode(id);
+      setMenuOpen(false);
+      setMenuNodeId(null);
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onDeleteNode]);
@@ -286,10 +306,9 @@ export function CanvasStage({
       const currentEdges = latestEdges.current;
       const hit = findPortAtPosition(currentNodes, w.x, w.y, fromNodeId);
       if (hit) {
-        const fromNode = currentNodes.find((n) => n.id === fromNodeId);
+        const fromNode = currentNodes.find((candidate) => candidate.id === fromNodeId);
         if (!fromNode) return;
-        const compatible = isConnectionCompatible(fromNode, hit.port) &&
-          !wouldCreateCycle(currentEdges, fromNodeId, hit.nodeId);
+        const compatible = isConnectionCompatible(fromNode, hit.port) && !wouldCreateCycle(currentEdges, fromNodeId, hit.nodeId);
         setHoveredPort({ nodeId: hit.nodeId, portId: hit.portId, port: hit.port, compatible });
       } else {
         setHoveredPort(null);
@@ -303,10 +322,9 @@ export function CanvasStage({
       const hit = findPortAtPosition(currentNodes, w.x, w.y, fromNodeId);
 
       if (hit) {
-        const fromNode = currentNodes.find((n) => n.id === fromNodeId);
+        const fromNode = currentNodes.find((candidate) => candidate.id === fromNodeId);
         if (fromNode) {
-          const compatible = isConnectionCompatible(fromNode, hit.port) &&
-            !wouldCreateCycle(currentEdges, fromNodeId, hit.nodeId);
+          const compatible = isConnectionCompatible(fromNode, hit.port) && !wouldCreateCycle(currentEdges, fromNodeId, hit.nodeId);
           if (compatible) {
             const newEdge: WorkflowEdge = {
               id: `e-${fromNodeId}-${hit.nodeId}-${hit.portId}-${Date.now()}`,
@@ -347,13 +365,18 @@ export function CanvasStage({
       const worldH = worldBounds.maxY - worldBounds.minY;
       if (worldW <= 0 || worldH <= 0) return;
 
-      const mapW = rect.width;
-      const mapH = rect.height;
-      const scaleRatio = Math.min(mapW / worldW, mapH / worldH);
-      const offsetX = (mapW - worldW * scaleRatio) / 2;
-      const offsetY = (mapH - worldH * scaleRatio) / 2;
-      const worldX = worldBounds.minX + (clickX - offsetX) / scaleRatio;
-      const worldY = worldBounds.minY + (clickY - offsetY) / scaleRatio;
+      const { layout } = getMiniMapViewportRect({
+        bounds: worldBounds,
+        miniMapSize: { width: rect.width, height: rect.height },
+        boardSize: {
+          width: boardRef.current?.clientWidth ?? 1200,
+          height: boardRef.current?.clientHeight ?? 700,
+        },
+        viewport: latestViewport.current,
+      });
+
+      const worldX = worldBounds.minX + (clickX - layout.offsetX) / layout.scaleRatio;
+      const worldY = worldBounds.minY + (clickY - layout.offsetY) / layout.scaleRatio;
 
       const board = boardRef.current;
       if (!board) return;
@@ -389,38 +412,31 @@ export function CanvasStage({
     const worldH = bounds.maxY - bounds.minY;
     if (worldW <= 0 || worldH <= 0) return null;
 
-    const mapW = miniMapSize.w;
-    const mapH = miniMapSize.h;
-    const scaleRatio = Math.min(mapW / worldW, mapH / worldH);
-    const offsetX = (mapW - worldW * scaleRatio) / 2;
-    const offsetY = (mapH - worldH * scaleRatio) / 2;
+    const { layout, viewportRect } = getMiniMapViewportRect({
+      bounds,
+      miniMapSize: { width: miniMapSize.w, height: miniMapSize.h },
+      boardSize: {
+        width: boardRef.current?.clientWidth ?? 1200,
+        height: boardRef.current?.clientHeight ?? 700,
+      },
+      viewport,
+    });
 
-    const nodeRects = nodes.map((n) => ({
-      id: n.id,
-      x: (n.x - bounds.minX) * scaleRatio + offsetX,
-      y: (n.y - bounds.minY) * scaleRatio + offsetY,
-      w: (n.width ?? 220) * scaleRatio,
-      h: 110 * scaleRatio,
+    const nodeRects = canvasNodes.map((node) => ({
+      id: node.id,
+      x: (node.x - bounds.minX) * layout.scaleRatio + layout.offsetX,
+      y: (node.y - bounds.minY) * layout.scaleRatio + layout.offsetY,
+      w: (node.width ?? 220) * layout.scaleRatio,
+      h: (node.height ?? 110) * layout.scaleRatio,
     }));
 
-    const board = boardRef.current;
-    const boardW = board?.clientWidth ?? 1200;
-    const boardH = board?.clientHeight ?? 700;
-
-    const vpWorldX1 = -viewport.x / viewport.scale;
-    const vpWorldY1 = -viewport.y / viewport.scale;
-    const vpWorldX2 = vpWorldX1 + boardW / viewport.scale;
-    const vpWorldY2 = vpWorldY1 + boardH / viewport.scale;
-
-    const vpRect = {
-      x: (vpWorldX1 - bounds.minX) * scaleRatio + offsetX,
-      y: (vpWorldY1 - bounds.minY) * scaleRatio + offsetY,
-      w: (vpWorldX2 - vpWorldX1) * scaleRatio,
-      h: (vpWorldY2 - vpWorldY1) * scaleRatio,
+    return {
+      nodeRects,
+      vpRect: viewportRect,
+      mapW: miniMapSize.w,
+      mapH: miniMapSize.h,
     };
-
-    return { nodeRects, vpRect, mapW, mapH };
-  }, [nodes, worldBounds, viewport, miniMapSize]);
+  }, [canvasNodes, miniMapSize, viewport, worldBounds]);
 
   return (
     <section
@@ -432,6 +448,9 @@ export function CanvasStage({
         setMenuNodeId(nodeEl?.dataset.nodeId ?? null);
         setMenuPos({ x: event.clientX, y: event.clientY });
         setMenuOpen(true);
+        if (nodeEl?.dataset.nodeId) {
+          onSelectNode(nodeEl.dataset.nodeId);
+        }
       }}
       onPointerDown={(event) => {
         if (event.button === 0 && menuOpen) {
@@ -465,16 +484,8 @@ export function CanvasStage({
         </div>
       </div>
 
-      <div
-        ref={boardRef}
-        className="canvas-board minimal-board"
-        onWheel={handleWheel}
-        onPointerDown={handleBoardPointerDown}
-      >
-        <div
-          className="canvas-content-layer"
-          style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}
-        >
+      <div ref={boardRef} className="canvas-board minimal-board" onWheel={handleWheel} onPointerDown={handleBoardPointerDown}>
+        <div className="canvas-content-layer" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}>
           <div className="canvas-grid subtle-grid" />
           <svg className="edge-layer minimal-edge-layer">
             {edges.map((edge) => {
@@ -512,10 +523,10 @@ export function CanvasStage({
             <div key={node.id} data-node-id={node.id} onClick={() => onSelectNode(node.id)}>
               <CanvasNode
                 node={node}
-                selected={node.id === selectedNode.id}
+                selected={node.id === selectedNode?.id}
                 dragging={draggingNodeId === node.id}
                 onPointerDown={(event) => handleNodePointerDown(event, node)}
-                onOutputPortPointerDown={(event, n) => handleConnectionStart(event, n)}
+                onOutputPortPointerDown={(event, candidate) => handleConnectionStart(event, candidate)}
                 highlightPortId={hoveredPort?.nodeId === node.id ? hoveredPort.portId : null}
                 highlightCompatible={hoveredPort?.nodeId === node.id ? hoveredPort.compatible : undefined}
               />
@@ -524,10 +535,7 @@ export function CanvasStage({
         </div>
 
         {menuOpen ? (
-          <div
-            className="right-click-menu-preview interactive"
-            style={{ left: menuPos.x, top: menuPos.y }}
-          >
+          <div className="right-click-menu-preview interactive" style={{ left: menuPos.x, top: menuPos.y }}>
             {menuNodeId ? (
               <>
                 <div className="menu-title">节点操作</div>
@@ -549,11 +557,7 @@ export function CanvasStage({
                   <button
                     key={name}
                     onClick={() => {
-                      const rect = boardRef.current!.getBoundingClientRect();
-                      const world = screenToWorldOnBoard(
-                        menuPos.x - rect.left,
-                        menuPos.y - rect.top,
-                      );
+                      const world = screenToWorldOnBoard(menuPos.x, menuPos.y);
                       const newNode = createNodeFromTool(name, nodes.length + index);
                       newNode.x = world.x;
                       newNode.y = world.y;
@@ -572,11 +576,7 @@ export function CanvasStage({
 
       <div className="mini-map-card">
         <div className="mini-map-title">缩略导航</div>
-        <div
-          ref={miniMapRef}
-          className="mini-map-grid"
-          onPointerDown={handleMiniMapInteraction}
-        >
+        <div ref={miniMapRef} className="mini-map-grid" onPointerDown={handleMiniMapInteraction}>
           {miniMapData && (
             <>
               {miniMapData.nodeRects.map((rect) => (

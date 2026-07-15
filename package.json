@@ -1,22 +1,33 @@
 {
-  "name": "ai-infinite-canvas-prototype",
+  "name": "ai-infinite-canvas-platform",
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "packageManager": "bun@1.3.14",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "dev": "bun run --cwd apps/web dev",
+    "cleanup:temp": "bun run scripts/cleanup-temp-files.ts",
+    "build": "bun run build:node-protocol && bun run build:workflow-core && bun run build:canvas-engine && bun run build:event-core && bun run build:web && bun run cleanup:temp",
+    "build:web": "bun run --cwd apps/web build",
+    "build:node-protocol": "bun run --cwd packages/node-protocol build",
+    "build:workflow-core": "bun run --cwd packages/workflow-core build",
+    "build:canvas-engine": "bun run --cwd packages/canvas-engine build",
+    "build:event-core": "bun run --cwd packages/event-core build",
+    "test:workflow-core": "bun run --cwd packages/workflow-core test",
+    "test:canvas-engine": "bun run --cwd packages/canvas-engine test",
+    "test:event-core": "bun run --cwd packages/event-core test",
+    "typecheck": "bun run typecheck:node-protocol && bun run typecheck:workflow-core && bun run typecheck:canvas-engine && bun run typecheck:event-core && bun run typecheck:web && bun run cleanup:temp",
+    "typecheck:web": "bun run --cwd apps/web typecheck",
+    "typecheck:node-protocol": "bun run --cwd packages/node-protocol typecheck",
+    "typecheck:workflow-core": "bun run --cwd packages/workflow-core typecheck",
+    "typecheck:canvas-engine": "bun run --cwd packages/canvas-engine typecheck",
+    "typecheck:event-core": "bun run --cwd packages/event-core typecheck"
   },
   "devDependencies": {
-    "@types/react": "^18.3.5",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.2"
+    "typescript": "5.5.4"
   }
 }

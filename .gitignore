@@ -5,6 +5,7 @@ build/
 .env
 .env.local
 *.log
+*.tsbuildinfo
 .vscode/
 .idea/
 __pycache__/
