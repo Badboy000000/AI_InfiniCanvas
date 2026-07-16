@@ -1,0 +1,25 @@
+{
+  "name": "@ai-canvas/node-definitions",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun x tsc -b",
+    "typecheck": "bun x tsc -p tsconfig.json --noEmit",
+    "test": "bun run ../../scripts/node-definitions.test.ts"
+  },
+  "dependencies": {
+    "@ai-canvas/node-protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

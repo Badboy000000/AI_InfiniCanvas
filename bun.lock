@@ -50,6 +50,16 @@
         "typescript": "^5.5.4",
       },
     },
+    "packages/node-definitions": {
+      "name": "@ai-canvas/node-definitions",
+      "version": "0.0.1",
+      "dependencies": {
+        "@ai-canvas/node-protocol": "workspace:*",
+      },
+      "devDependencies": {
+        "typescript": "^5.5.4",
+      },
+    },
     "packages/node-protocol": {
       "name": "@ai-canvas/node-protocol",
       "version": "0.0.1",
@@ -78,6 +88,8 @@
     "@ai-canvas/capability-core": ["@ai-canvas/capability-core@workspace:packages/capability-core"],
 
     "@ai-canvas/event-core": ["@ai-canvas/event-core@workspace:packages/event-core"],
+
+    "@ai-canvas/node-definitions": ["@ai-canvas/node-definitions@workspace:packages/node-definitions"],
 
     "@ai-canvas/node-protocol": ["@ai-canvas/node-protocol@workspace:packages/node-protocol"],
 
@@ -324,6 +336,8 @@
     "@ai-canvas/capability-core/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@ai-canvas/event-core/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+
+    "@ai-canvas/node-definitions/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@ai-canvas/node-protocol/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 

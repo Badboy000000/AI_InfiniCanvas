@@ -11,24 +11,27 @@
   "scripts": {
     "dev": "bun run --cwd apps/web dev",
     "cleanup:temp": "bun run scripts/cleanup-temp-files.ts",
-    "build": "bun run build:node-protocol && bun run build:workflow-core && bun run build:canvas-engine && bun run build:event-core && bun run build:capability-core && bun run build:web && bun run cleanup:temp",
+    "build": "bun run build:node-protocol && bun run build:workflow-core && bun run build:canvas-engine && bun run build:event-core && bun run build:capability-core && bun run build:node-definitions && bun run build:web && bun run cleanup:temp",
     "build:web": "bun run --cwd apps/web build",
     "build:node-protocol": "bun run --cwd packages/node-protocol build",
     "build:workflow-core": "bun run --cwd packages/workflow-core build",
     "build:canvas-engine": "bun run --cwd packages/canvas-engine build",
     "build:event-core": "bun run --cwd packages/event-core build",
     "build:capability-core": "bun run --cwd packages/capability-core build",
+    "build:node-definitions": "bun run --cwd packages/node-definitions build",
     "test:workflow-core": "bun run --cwd packages/workflow-core test",
     "test:canvas-engine": "bun run --cwd packages/canvas-engine test",
     "test:event-core": "bun run --cwd packages/event-core test",
     "test:capability-core": "bun run --cwd packages/capability-core test",
-    "typecheck": "bun run typecheck:node-protocol && bun run typecheck:workflow-core && bun run typecheck:canvas-engine && bun run typecheck:event-core && bun run typecheck:capability-core && bun run typecheck:web && bun run cleanup:temp",
+    "test:node-definitions": "bun run --cwd packages/node-definitions test",
+    "typecheck": "bun run typecheck:node-protocol && bun run typecheck:workflow-core && bun run typecheck:canvas-engine && bun run typecheck:event-core && bun run typecheck:capability-core && bun run typecheck:node-definitions && bun run typecheck:web && bun run cleanup:temp",
     "typecheck:web": "bun run --cwd apps/web typecheck",
     "typecheck:node-protocol": "bun run --cwd packages/node-protocol typecheck",
     "typecheck:workflow-core": "bun run --cwd packages/workflow-core typecheck",
     "typecheck:canvas-engine": "bun run --cwd packages/canvas-engine typecheck",
     "typecheck:event-core": "bun run --cwd packages/event-core typecheck",
-    "typecheck:capability-core": "bun run --cwd packages/capability-core typecheck"
+    "typecheck:capability-core": "bun run --cwd packages/capability-core typecheck",
+    "typecheck:node-definitions": "bun run --cwd packages/node-definitions typecheck"
   },
   "devDependencies": {
     "typescript": "5.5.4"

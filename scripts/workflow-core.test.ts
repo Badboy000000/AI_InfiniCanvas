@@ -1,4 +1,13 @@
-﻿import { compileExecutionPlan, resolveNodeInputs, validateEdges, type Edge, type Workflow } from '../packages/workflow-core/src/index.js';
+﻿import {
+  compileExecutionPlan,
+  resolveNodeInputs,
+  tryValidateEdge,
+  tryValidateWorkflow,
+  validateEdges,
+  type Edge,
+  type Workflow,
+  type WorkflowEdgeRejection,
+} from '../packages/workflow-core/src/index.js';
 import type { NodeDefinition, Node } from '../packages/node-protocol/src/index.js';
 import { strict as assert } from 'node:assert';
 
@@ -118,5 +127,194 @@ assert.throws(
     }),
   /Cycle detected/,
 );
+
+// ---- WorkflowEdgeRejection 结构化拒绝对象测试 ----
+
+const imageInputDefinition: NodeDefinition = {
+  type: 'input.image',
+  title: '图片输入',
+  category: 'input',
+  inputs: [],
+  outputs: [{ key: 'images', label: '图片', dataType: 'image', cardinality: 'array' }],
+  executor: { type: 'asset' },
+};
+
+const rejectionDefinitions: Record<string, NodeDefinition> = {
+  'input.text': inputDefinition,
+  'processor.concat': processorDefinition,
+  'input.image': imageInputDefinition,
+};
+
+const emptyWorkflow: Workflow = {
+  id: 'wf-rej',
+  name: 'wf-rej',
+  nodes: [
+    textNode('primary'),
+    textNode('ref-a'),
+    { ...processorNode },
+    { id: 'img', type: 'input.image', title: 'img', position: { x: 0, y: 0 }, config: { params: {} } },
+  ],
+  edges: [],
+};
+
+function expectRejection(
+  rejection: WorkflowEdgeRejection | null,
+  code: WorkflowEdgeRejection['code'],
+): asserts rejection is WorkflowEdgeRejection {
+  assert.ok(rejection, `expected rejection ${code}`);
+  assert.equal(rejection.code, code);
+}
+
+// self connection
+{
+  const rej = tryValidateEdge(
+    {
+      sourceNodeId: 'primary',
+      sourceOutputKey: 'text',
+      targetNodeId: 'primary',
+      targetInputKey: 'primary',
+    },
+    emptyWorkflow,
+    rejectionDefinitions,
+  );
+  expectRejection(rej, 'self_connection_not_allowed');
+}
+
+// unknown port
+{
+  const rej = tryValidateEdge(
+    {
+      sourceNodeId: 'primary',
+      sourceOutputKey: 'not-exist',
+      targetNodeId: 'processor',
+      targetInputKey: 'primary',
+    },
+    emptyWorkflow,
+    rejectionDefinitions,
+  );
+  expectRejection(rej, 'source_port_unknown');
+}
+
+{
+  const rej = tryValidateEdge(
+    {
+      sourceNodeId: 'primary',
+      sourceOutputKey: 'text',
+      targetNodeId: 'processor',
+      targetInputKey: 'not-exist',
+    },
+    emptyWorkflow,
+    rejectionDefinitions,
+  );
+  expectRejection(rej, 'target_port_unknown');
+}
+
+// type incompatible
+{
+  const rej = tryValidateEdge(
+    {
+      sourceNodeId: 'img',
+      sourceOutputKey: 'images',
+      targetNodeId: 'processor',
+      targetInputKey: 'primary',
+    },
+    emptyWorkflow,
+    rejectionDefinitions,
+  );
+  expectRejection(rej, 'type_incompatible');
+  assert.deepEqual(rej.detail?.targetAcceptedTypes, ['text']);
+  assert.equal(rej.detail?.sourceDataType, 'image');
+}
+
+// target input occupied (single)
+{
+  const occupiedWorkflow: Workflow = {
+    ...emptyWorkflow,
+    edges: [
+      { id: 'existing', sourceNodeId: 'primary', sourceOutputKey: 'text', targetNodeId: 'processor', targetInputKey: 'primary' },
+    ],
+  };
+  const rej = tryValidateEdge(
+    {
+      sourceNodeId: 'ref-a',
+      sourceOutputKey: 'text',
+      targetNodeId: 'processor',
+      targetInputKey: 'primary',
+    },
+    occupiedWorkflow,
+    rejectionDefinitions,
+  );
+  expectRejection(rej, 'target_input_occupied');
+  assert.equal(rej.detail?.existingEdgeId, 'existing');
+  // same edgeId 更新自身不算占用
+  const selfUpdate = tryValidateEdge(
+    {
+      edgeId: 'existing',
+      sourceNodeId: 'primary',
+      sourceOutputKey: 'text',
+      targetNodeId: 'processor',
+      targetInputKey: 'primary',
+    },
+    occupiedWorkflow,
+    rejectionDefinitions,
+  );
+  assert.equal(selfUpdate, null);
+}
+
+// would create cycle
+{
+  const cycleWorkflow: Workflow = {
+    ...emptyWorkflow,
+    nodes: [
+      { ...processorNode, id: 'a' },
+      { ...processorNode, id: 'b' },
+    ],
+    edges: [
+      { id: 'ab', sourceNodeId: 'a', sourceOutputKey: 'result', targetNodeId: 'b', targetInputKey: 'primary' },
+    ],
+  };
+  const rej = tryValidateEdge(
+    {
+      sourceNodeId: 'b',
+      sourceOutputKey: 'result',
+      targetNodeId: 'a',
+      targetInputKey: 'primary',
+    },
+    cycleWorkflow,
+    rejectionDefinitions,
+  );
+  expectRejection(rej, 'would_create_cycle');
+}
+
+// happy path
+{
+  const rej = tryValidateEdge(
+    {
+      sourceNodeId: 'primary',
+      sourceOutputKey: 'text',
+      targetNodeId: 'processor',
+      targetInputKey: 'primary',
+    },
+    emptyWorkflow,
+    rejectionDefinitions,
+  );
+  assert.equal(rej, null);
+}
+
+// tryValidateWorkflow: 汇总多个问题
+{
+  const brokenWorkflow: Workflow = {
+    ...emptyWorkflow,
+    edges: [
+      { id: 'ok', sourceNodeId: 'primary', sourceOutputKey: 'text', targetNodeId: 'processor', targetInputKey: 'primary' },
+      { id: 'dup', sourceNodeId: 'ref-a', sourceOutputKey: 'text', targetNodeId: 'processor', targetInputKey: 'primary' },
+      { id: 'bad-type', sourceNodeId: 'img', sourceOutputKey: 'images', targetNodeId: 'processor', targetInputKey: 'primary' },
+    ],
+  };
+  const rejections = tryValidateWorkflow(brokenWorkflow, rejectionDefinitions);
+  const codes = new Set(rejections.map((r) => r.code));
+  assert.ok(codes.has('target_input_occupied'));
+  assert.ok(codes.has('type_incompatible'));
+}
 
 console.log('workflow-core tests passed');

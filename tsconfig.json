@@ -6,6 +6,7 @@
     { "path": "./packages/workflow-core" },
     { "path": "./packages/canvas-engine" },
     { "path": "./packages/event-core" },
-    { "path": "./packages/capability-core" }
+    { "path": "./packages/capability-core" },
+    { "path": "./packages/node-definitions" }
   ]
 }
