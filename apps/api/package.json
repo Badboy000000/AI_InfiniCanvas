@@ -1,0 +1,21 @@
+{
+  "name": "@ai-canvas/api",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/main.ts",
+    "typecheck": "bun x tsc -p tsconfig.json --noEmit",
+    "test": "bun run ../../scripts/api.smoke.ts"
+  },
+  "dependencies": {
+    "@ai-canvas/workflow-core": "workspace:*",
+    "@ai-canvas/event-core": "workspace:*",
+    "@ai-canvas/node-protocol": "workspace:*",
+    "@ai-canvas/node-definitions": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.15",
+    "typescript": "^5.5.4"
+  }
+}
