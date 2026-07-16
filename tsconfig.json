@@ -5,6 +5,7 @@
     { "path": "./packages/node-protocol" },
     { "path": "./packages/workflow-core" },
     { "path": "./packages/canvas-engine" },
-    { "path": "./packages/event-core" }
+    { "path": "./packages/event-core" },
+    { "path": "./packages/capability-core" }
   ]
 }
