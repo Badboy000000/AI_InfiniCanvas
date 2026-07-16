@@ -49,6 +49,7 @@ export const nodes: WorkflowNode[] = [
     description: '为整个流程提供主题、受众和传播目标。',
     inputPorts: [],
     metrics: ['主题', '00后', '春季 campaign'],
+    configParams: { value: '春季快闪活动 × 轻盈未来感 · 主题：00后 · 目标：品牌焕新' },
   },
   {
     id: 'ref',
@@ -66,6 +67,7 @@ export const nodes: WorkflowNode[] = [
     description: '提供构图、材质和色彩参考。',
     inputPorts: [],
     metrics: ['3 refs', 'Editorial', 'Soft gloss'],
+    configParams: { allowMultiple: true, assetIds: ['demo-product-1', 'demo-reference-1'] },
   },
   {
     id: 'style',
@@ -106,6 +108,7 @@ export const nodes: WorkflowNode[] = [
       { id: 'extras', label: '附加内容', dataType: 'text' },
     ],
     metrics: ['2 inputs', 'Prompt pack'],
+    configParams: { template: '# 主题\n{{primary}}\n\n# 附加\n{{extras}}' },
   },
   {
     id: 'image',
@@ -126,6 +129,7 @@ export const nodes: WorkflowNode[] = [
       { id: 'referenceImages', label: '参考图片', dataType: 'image' },
     ],
     metrics: ['1 image', 'Hero visual'],
+    configParams: { preset: 'ecommerce_detail_screen_image_v1', size: '750x1000', quality: 'balanced' },
   },
   {
     id: 'archive',
@@ -145,6 +149,7 @@ export const nodes: WorkflowNode[] = [
       { id: 'image', label: '待导出图片', dataType: 'image' },
     ],
     metrics: ['Asset', 'Deliverable'],
+    configParams: { format: 'jpg', quality: 92 },
   },
 ];
 

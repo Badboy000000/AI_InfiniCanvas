@@ -20,7 +20,7 @@ export function toProtocolNode(node: WorkflowNode): ProtocolNode {
     type: node.nodeType ?? node.type,
     title: node.title,
     position: { x: node.x, y: node.y },
-    config: { params: {} },
+    config: { params: (node.configParams as Record<string, unknown> | undefined) ?? {} },
   };
 }
 
@@ -40,15 +40,19 @@ export function resolveSourceOutputKey(node: WorkflowNode | undefined): string {
   return definition?.outputs[0]?.key ?? 'output';
 }
 
-export function toWorkflow(nodes: WorkflowNode[], edges: WorkflowEdge[]): Workflow {
+export function toWorkflow(
+  nodes: WorkflowNode[],
+  edges: WorkflowEdge[],
+  meta: { id?: string; name?: string } = {},
+): Workflow {
   const protocolNodes = nodes.map(toProtocolNode);
   const protocolEdges: Edge[] = edges.map((edge) => {
     const sourceNode = nodes.find((candidate) => candidate.id === edge.from);
     return toProtocolEdge(edge, resolveSourceOutputKey(sourceNode));
   });
   return {
-    id: 'canvas-draft',
-    name: 'canvas-draft',
+    id: meta.id ?? 'canvas-draft',
+    name: meta.name ?? 'canvas-draft',
     nodes: protocolNodes,
     edges: protocolEdges,
   };

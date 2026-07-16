@@ -30,6 +30,8 @@ export type WorkflowNode = {
   description: string;
   inputPorts?: InputPortDef[];
   metrics?: string[];
+  /** 节点 config.params，用于串到 workflow-core / worker executor。 */
+  configParams?: Record<string, unknown>;
 };
 
 export type WorkflowEdge = {
