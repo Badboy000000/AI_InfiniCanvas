@@ -25,8 +25,10 @@
     "test:capability-core": "bun run --cwd packages/capability-core test",
     "test:node-definitions": "bun run --cwd packages/node-definitions test",
     "test:api": "bun run --cwd apps/api test",
+    "test:worker": "bun run --cwd apps/worker test",
     "start:api": "bun run --cwd apps/api start",
-    "typecheck": "bun run typecheck:node-protocol && bun run typecheck:workflow-core && bun run typecheck:canvas-engine && bun run typecheck:event-core && bun run typecheck:capability-core && bun run typecheck:node-definitions && bun run typecheck:web && bun run typecheck:api && bun run cleanup:temp",
+    "start:worker": "bun run --cwd apps/worker start",
+    "typecheck": "bun run typecheck:node-protocol && bun run typecheck:workflow-core && bun run typecheck:canvas-engine && bun run typecheck:event-core && bun run typecheck:capability-core && bun run typecheck:node-definitions && bun run typecheck:web && bun run typecheck:api && bun run typecheck:worker && bun run cleanup:temp",
     "typecheck:web": "bun run --cwd apps/web typecheck",
     "typecheck:node-protocol": "bun run --cwd packages/node-protocol typecheck",
     "typecheck:workflow-core": "bun run --cwd packages/workflow-core typecheck",
@@ -34,7 +36,8 @@
     "typecheck:event-core": "bun run --cwd packages/event-core typecheck",
     "typecheck:capability-core": "bun run --cwd packages/capability-core typecheck",
     "typecheck:node-definitions": "bun run --cwd packages/node-definitions typecheck",
-    "typecheck:api": "bun run --cwd apps/api typecheck"
+    "typecheck:api": "bun run --cwd apps/api typecheck",
+    "typecheck:worker": "bun run --cwd apps/worker typecheck"
   },
   "devDependencies": {
     "typescript": "5.5.4"

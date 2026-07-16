@@ -40,6 +40,21 @@
         "vite": "^5.4.2",
       },
     },
+    "apps/worker": {
+      "name": "@ai-canvas/worker",
+      "version": "0.0.1",
+      "dependencies": {
+        "@ai-canvas/capability-core": "workspace:*",
+        "@ai-canvas/event-core": "workspace:*",
+        "@ai-canvas/node-definitions": "workspace:*",
+        "@ai-canvas/node-protocol": "workspace:*",
+        "@ai-canvas/workflow-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/node": "^20.14.15",
+        "typescript": "^5.5.4",
+      },
+    },
     "packages/canvas-engine": {
       "name": "@ai-canvas/canvas-engine",
       "version": "0.0.1",
@@ -110,6 +125,8 @@
     "@ai-canvas/node-protocol": ["@ai-canvas/node-protocol@workspace:packages/node-protocol"],
 
     "@ai-canvas/web": ["@ai-canvas/web@workspace:apps/web"],
+
+    "@ai-canvas/worker": ["@ai-canvas/worker@workspace:apps/worker"],
 
     "@ai-canvas/workflow-core": ["@ai-canvas/workflow-core@workspace:packages/workflow-core"],
 
@@ -360,6 +377,8 @@
     "@ai-canvas/node-protocol/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@ai-canvas/web/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+
+    "@ai-canvas/worker/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@ai-canvas/workflow-core/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
   }
