@@ -103,6 +103,19 @@
         "typescript": "^5.5.4",
       },
     },
+    "packages/persistence": {
+      "name": "@ai-canvas/persistence",
+      "version": "0.0.1",
+      "dependencies": {
+        "@ai-canvas/capability-core": "workspace:*",
+        "@ai-canvas/event-core": "workspace:*",
+        "@ai-canvas/node-protocol": "workspace:*",
+        "@ai-canvas/workflow-core": "workspace:*",
+      },
+      "devDependencies": {
+        "typescript": "^5.5.4",
+      },
+    },
     "packages/workflow-core": {
       "name": "@ai-canvas/workflow-core",
       "version": "0.0.1",
@@ -127,6 +140,8 @@
     "@ai-canvas/node-definitions": ["@ai-canvas/node-definitions@workspace:packages/node-definitions"],
 
     "@ai-canvas/node-protocol": ["@ai-canvas/node-protocol@workspace:packages/node-protocol"],
+
+    "@ai-canvas/persistence": ["@ai-canvas/persistence@workspace:packages/persistence"],
 
     "@ai-canvas/web": ["@ai-canvas/web@workspace:apps/web"],
 
@@ -379,6 +394,8 @@
     "@ai-canvas/node-definitions/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@ai-canvas/node-protocol/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+
+    "@ai-canvas/persistence/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@ai-canvas/web/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 

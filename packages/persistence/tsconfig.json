@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@ai-canvas/node-protocol": ["../node-protocol/src/index.ts"],
+      "@ai-canvas/workflow-core": ["../workflow-core/src/index.ts"],
+      "@ai-canvas/event-core": ["../event-core/src/index.ts"],
+      "@ai-canvas/capability-core": ["../capability-core/src/index.ts"]
+    },
+    "strict": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "skipLibCheck": true,
+    "noEmitOnError": true
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../node-protocol" },
+    { "path": "../workflow-core" },
+    { "path": "../event-core" },
+    { "path": "../capability-core" }
+  ]
+}

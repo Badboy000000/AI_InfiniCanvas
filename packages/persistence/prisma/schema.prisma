@@ -1,0 +1,187 @@
+// AI 无限画布自由创作平台 · 数据层第一版 Prisma schema
+//
+// 本 schema 是阶段 8 数据、资产与运行记录合同基线的正式定义。
+// 目标：让实际接入 PostgreSQL 时按本文件直接 `prisma migrate dev`，
+// 且字段与 [[核心数据模型设计]] 一致，避免协议漂移。
+//
+// 结构原则：
+// 1. 核心实体单独建表，便于查询与索引
+// 2. 灵活字段（config、content、metadata、payload）使用 Jsonb
+// 3. 结果版本、资产与运行记录三张独立表，不合并
+// 4. 保留必要索引（workflowId、runId、nodeId、createdAt、outputKey、type）
+//
+// 第一版暂缓：多租户 orgId、软删除、审计列（updatedBy）等。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Workflow {
+  id          String   @id
+  name        String
+  description String?
+  canvas      Json?
+  templateInfo Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  nodes WorkflowNode[]
+  edges WorkflowEdge[]
+  runs  Run[]
+
+  @@index([updatedAt])
+}
+
+model WorkflowNode {
+  id          String  @id
+  workflowId  String
+  type        String
+  title       String
+  positionX   Float
+  positionY   Float
+  width       Float?
+  height      Float?
+  config      Json
+  outputState Json?
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([type])
+}
+
+model WorkflowEdge {
+  id              String @id
+  workflowId      String
+  sourceNodeId    String
+  sourceOutputKey String
+  targetNodeId    String
+  targetInputKey  String
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([sourceNodeId])
+  @@index([targetNodeId])
+}
+
+model Run {
+  id         String    @id
+  workflowId String
+  status     String    // pending | running | success | failed | cancelled
+  startedAt  DateTime?
+  finishedAt DateTime?
+  eventCount Int       @default(0)
+  lastError  Json?
+
+  workflow    Workflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  nodeStates  RunNodeState[]
+  events      RunEvent[]
+
+  @@index([workflowId, status])
+  @@index([startedAt])
+}
+
+model RunNodeState {
+  id                String   @id @default(uuid())
+  runId             String
+  nodeId            String
+  status            String   // idle | waiting | running | success | failed | skipped | cancelled
+  attemptCount      Int      @default(0)
+  startedAt         DateTime?
+  finishedAt        DateTime?
+  resultVersionIds  String[]
+  error             Json?
+  partialResult     Json?
+  skipReason        String?
+
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, nodeId])
+  @@index([runId, status])
+}
+
+model RunEvent {
+  id         String   @id
+  runId      String
+  workflowId String
+  type       String
+  occurredAt DateTime
+  payload    Json
+
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, occurredAt])
+  @@index([type])
+}
+
+model NodeResultVersion {
+  id              String   @id
+  workflowId      String
+  nodeId          String
+  runId           String?
+  outputKey       String
+  versionNumber   Int
+  sourceType      String   // ai_generated | user_edited | regenerated | code_generated | imported
+  parentVersionId String?
+  contentType     String   // text | markdown | json | image | image_array | layered_image | long_image | file | asset_ref
+  content         Json?
+  assetIds        String[]
+  summary         String?
+  inputSnapshot   Json?
+  modelInfo       Json?
+  promptVersion   String?
+  createdBy       String   // system | user
+  createdAt       DateTime @default(now())
+
+  @@index([workflowId, nodeId, outputKey])
+  @@index([runId])
+  @@index([createdAt])
+}
+
+model Asset {
+  id        String   @id
+  type      String   // image | file | video | long_image
+  url       String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([type])
+  @@index([createdAt])
+}
+
+model CapabilityCallLog {
+  id            String   @id
+  workflowId    String
+  runId         String
+  nodeId        String
+  executorKey   String
+  capability    String
+  task          String
+  provider      String
+  model         String?
+  adapterKey    String
+  status        String   // success | failed
+  latencyMs     Int
+  quality       String?
+  promptVersion String?
+  preset        String?
+  usage         Json?
+  errorCode     String?
+  errorCategory String?
+  retryCount    Int      @default(0)
+  fallbackUsed  Boolean  @default(false)
+  attempts      Json
+  createdAt     DateTime @default(now())
+
+  @@index([runId])
+  @@index([capability, task])
+  @@index([provider])
+  @@index([status])
+  @@index([createdAt])
+}
