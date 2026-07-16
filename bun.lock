@@ -27,6 +27,10 @@
       "version": "0.0.1",
       "dependencies": {
         "@ai-canvas/canvas-engine": "workspace:*",
+        "@ai-canvas/capability-core": "workspace:*",
+        "@ai-canvas/event-core": "workspace:*",
+        "@ai-canvas/node-definitions": "workspace:*",
+        "@ai-canvas/node-protocol": "workspace:*",
         "@ai-canvas/workflow-core": "workspace:*",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",

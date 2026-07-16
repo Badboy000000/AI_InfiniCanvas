@@ -1,4 +1,4 @@
-export type NodeCategory = '输入' | '处理' | '生成' | '输出';
+export type NodeCategory = '输入' | '处理' | '生成' | '输出' | 'AI';
 export type DataType = 'text' | 'image' | 'video' | 'file' | 'ai';
 export type DataTypeOrAny = DataType | 'any';
 
@@ -12,6 +12,12 @@ export type WorkflowNode = {
   id: string;
   title: string;
   type: string;
+  /**
+   * 正式节点协议 type（如 'input.text' / 'ai.image_generation'）。
+   * 若为空，表示当前节点尚未与正式协议对齐，只用于原型渲染。
+   * 阶段 9 及后续开发新增节点必须填写。
+   */
+  nodeType?: string;
   category: NodeCategory;
   dataType: DataType;
   x: number;
@@ -41,6 +47,8 @@ export type LibraryGroup = {
   items: Array<{
     name: string;
     type: string;
+    /** 对应 @ai-canvas/node-definitions 的正式协议 type。 */
+    nodeType?: string;
     description: string;
   }>;
 };

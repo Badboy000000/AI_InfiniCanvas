@@ -4,33 +4,30 @@ export const libraryGroups: LibraryGroup[] = [
   {
     category: '输入',
     items: [
-      { name: '文本 Brief', type: '文本输入', description: '输入主题、需求和场景目标。' },
-      { name: '参考图', type: '图片输入', description: '放入风格参考与视觉锚点。' },
-      { name: '品牌资料', type: '文件输入', description: '承接品牌语气、视觉规范和素材约束。' },
+      { name: '文本输入', type: '文本输入', nodeType: 'input.text', description: '输入或粘贴文本内容，作为工作流原始素材。' },
+      { name: '图片输入', type: '图片输入', nodeType: 'input.image', description: '上传单张或多张图片作为视觉素材。' },
     ],
   },
   {
     category: '处理',
     items: [
-      { name: '风格提取', type: '图像理解', description: '提取色彩、构图和气质关键词。' },
-      { name: '提示词整理', type: '结构化整理', description: '合并主题、风格与约束，生成可执行输入。' },
-      { name: '文案拆解', type: '文本处理', description: '压缩内容结构并生成主副标题。' },
+      { name: '参数组装', type: '参数组装', nodeType: 'processor.context_assembler', description: '把多份上游内容组装成下游可消费的上下文。' },
+      { name: '图片拼接', type: '图片拼接', nodeType: 'processor.image_stitch', description: '按指定顺序拼接多张图片。' },
+      { name: '文本编辑', type: '文本编辑', nodeType: 'editor.text', description: '人工确认并编辑上游文本结果。' },
     ],
   },
   {
-    category: '生成',
+    category: 'AI',
     items: [
-      { name: '海报生成', type: '图片生成', description: '根据结构化提示生成高视觉完成度主图。' },
-      { name: '视频脚本', type: '脚本生成', description: '衍生短视频口播与镜头脚本。' },
-      { name: '社媒文案', type: '文本生成', description: '针对不同渠道生成投放文案。' },
+      { name: 'AI 文本生成', type: 'AI 文本生成', nodeType: 'ai.text_generation', description: '基于上下文和提示词生成文本。' },
+      { name: 'AI 图片分析', type: 'AI 图片分析', nodeType: 'ai.image_analysis', description: '理解图片内容并输出结构化描述。' },
+      { name: 'AI 图片生成', type: 'AI 图片生成', nodeType: 'ai.image_generation', description: '根据上下文和参考图生成图片。' },
     ],
   },
   {
     category: '输出',
     items: [
-      { name: '结果归档', type: '保存输出', description: '将结果沉淀到项目资产区。' },
-      { name: '导出提案', type: '导出输出', description: '导出当前工作流的提案快照。' },
-      { name: '分发发布', type: '发布输出', description: '将结果分发至目标渠道。' },
+      { name: '图片导出', type: '图片导出', nodeType: 'export.image', description: '按指定格式导出最终图片资产。' },
     ],
   },
 ];
@@ -40,6 +37,7 @@ export const nodes: WorkflowNode[] = [
     id: 'brief',
     title: '海报主题',
     type: '文本输入',
+    nodeType: 'input.text',
     category: '输入',
     dataType: 'text',
     x: 80,
@@ -56,6 +54,7 @@ export const nodes: WorkflowNode[] = [
     id: 'ref',
     title: '视觉参考',
     type: '图片输入',
+    nodeType: 'input.image',
     category: '输入',
     dataType: 'image',
     x: 130,
@@ -71,8 +70,9 @@ export const nodes: WorkflowNode[] = [
   {
     id: 'style',
     title: '风格提取',
-    type: '图像理解',
-    category: '处理',
+    type: 'AI 图片分析',
+    nodeType: 'ai.image_analysis',
+    category: 'AI',
     dataType: 'ai',
     x: 410,
     y: 292,
@@ -82,14 +82,16 @@ export const nodes: WorkflowNode[] = [
     resultSummary: '镜面、雾感、留白、轻雕塑、偏移排版',
     description: '从参考图中提取风格特征和画面语义。',
     inputPorts: [
-      { id: 'in-0', label: '参考图', dataType: 'image' },
+      { id: 'images', label: '图片', dataType: 'image' },
+      { id: 'context', label: '上下文', dataType: 'text' },
     ],
     metrics: ['6 traits', 'Color DNA'],
   },
   {
     id: 'prompt',
     title: '提示词整理',
-    type: '结构化整理',
+    type: '参数组装',
+    nodeType: 'processor.context_assembler',
     category: '处理',
     dataType: 'text',
     x: 458,
@@ -100,16 +102,17 @@ export const nodes: WorkflowNode[] = [
     resultSummary: '主体 / 材质 / 构图 / 光感 已合并',
     description: '把主题、风格与品牌约束重组成可执行输入。',
     inputPorts: [
-      { id: 'in-0', label: '主题内容', dataType: 'text' },
-      { id: 'in-1', label: '风格特征', dataType: 'ai' },
+      { id: 'primary', label: '主上下文', dataType: 'text' },
+      { id: 'extras', label: '附加内容', dataType: 'text' },
     ],
     metrics: ['2 inputs', 'Prompt pack'],
   },
   {
     id: 'image',
     title: '海报生成',
-    type: '图片生成',
-    category: '生成',
+    type: 'AI 图片生成',
+    nodeType: 'ai.image_generation',
+    category: 'AI',
     dataType: 'image',
     x: 812,
     y: 126,
@@ -119,15 +122,16 @@ export const nodes: WorkflowNode[] = [
     resultSummary: '尚未执行',
     description: '生成可用于投放和提案展示的主图。',
     inputPorts: [
-      { id: 'in-0', label: '提示词', dataType: 'text' },
-      { id: 'in-1', label: '参考图', dataType: 'image' },
+      { id: 'generationContext', label: '生成上下文', dataType: 'text' },
+      { id: 'referenceImages', label: '参考图片', dataType: 'image' },
     ],
     metrics: ['1 image', 'Hero visual'],
   },
   {
     id: 'archive',
     title: '结果归档',
-    type: '保存输出',
+    type: '图片导出',
+    nodeType: 'export.image',
     category: '输出',
     dataType: 'file',
     x: 1120,
@@ -138,18 +142,17 @@ export const nodes: WorkflowNode[] = [
     resultSummary: '目标目录未设置',
     description: '将结果沉淀到资产与提案目录。',
     inputPorts: [
-      { id: 'in-0', label: '结果', dataType: 'any' },
+      { id: 'image', label: '待导出图片', dataType: 'image' },
     ],
     metrics: ['Asset', 'Deliverable'],
   },
 ];
 
 export const edges: WorkflowEdge[] = [
-  { id: 'e1', from: 'brief', to: 'prompt', label: '主题内容', dataType: 'text', fromPort: 'output', toPort: 'in-0' },
-  { id: 'e2', from: 'ref', to: 'style', label: '参考图', dataType: 'image', fromPort: 'output', toPort: 'in-0' },
-  { id: 'e3', from: 'style', to: 'prompt', label: '风格特征', dataType: 'ai', fromPort: 'output', toPort: 'in-1' },
-  { id: 'e4', from: 'prompt', to: 'image', label: '执行提示词', dataType: 'text', fromPort: 'output', toPort: 'in-0' },
-  { id: 'e5', from: 'image', to: 'archive', label: '主视觉结果', dataType: 'image', fromPort: 'output', toPort: 'in-0' },
+  { id: 'e1', from: 'brief', to: 'prompt', label: '主题内容', dataType: 'text', fromPort: 'output', toPort: 'primary' },
+  { id: 'e2', from: 'ref', to: 'style', label: '参考图', dataType: 'image', fromPort: 'output', toPort: 'images' },
+  { id: 'e4', from: 'prompt', to: 'image', label: '执行提示词', dataType: 'text', fromPort: 'output', toPort: 'generationContext' },
+  { id: 'e5', from: 'image', to: 'archive', label: '主视觉结果', dataType: 'image', fromPort: 'output', toPort: 'image' },
 ];
 
 export const inspectorSections: InspectorSection[] = [

@@ -3,7 +3,11 @@
     "baseUrl": ".",
     "paths": {
       "@ai-canvas/workflow-core": ["../../packages/workflow-core/src/index.ts"],
-      "@ai-canvas/canvas-engine": ["../../packages/canvas-engine/src/index.ts"]
+      "@ai-canvas/canvas-engine": ["../../packages/canvas-engine/src/index.ts"],
+      "@ai-canvas/node-protocol": ["../../packages/node-protocol/src/index.ts"],
+      "@ai-canvas/node-definitions": ["../../packages/node-definitions/src/index.ts"],
+      "@ai-canvas/event-core": ["../../packages/event-core/src/index.ts"],
+      "@ai-canvas/capability-core": ["../../packages/capability-core/src/index.ts"]
     },
     "target": "ES2020",
     "useDefineForClassFields": true,

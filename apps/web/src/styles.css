@@ -112,3 +112,6 @@ button { font: inherit; transition: 160ms ease; }
   .bottom-centered-toolbar { bottom: 8px; max-width: calc(100vw - 24px); overflow-x: auto; }
   .minimal-node { transform-origin: top left; }
 }
+
+.edge-rejection-toast { position: absolute; bottom: 76px; left: 50%; transform: translateX(-50%); z-index: 20; padding: 10px 16px; border-radius: 10px; background: rgba(220, 82, 82, 0.94); color: #fff; font-size: 12px; box-shadow: 0 8px 24px rgba(220, 82, 82, 0.25); animation: fade-in 0.16s ease-out; display: flex; gap: 8px; align-items: center; max-width: 480px; }
+.edge-rejection-toast strong { font-weight: 700; }

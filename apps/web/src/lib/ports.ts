@@ -13,8 +13,7 @@ import {
   type CanvasSize,
   type CanvasViewport,
 } from '@ai-canvas/canvas-engine';
-import { isWorkflowPortCompatible, wouldCreateWorkflowCycle } from '@ai-canvas/workflow-core';
-import type { InputPortDef, WorkflowEdge, WorkflowNode } from '../types';
+import type { InputPortDef, WorkflowNode } from '../types';
 
 function toCanvasNode(node: WorkflowNode): CanvasNode {
   return {
@@ -63,34 +62,8 @@ export function getPortAnchor(
   return getCanvasPortAnchor(toCanvasNode(node), port, side);
 }
 
-export function isConnectionCompatible(
-  outputNode: WorkflowNode,
-  targetPort: InputPortDef,
-): boolean {
-  if (targetPort.dataType === 'any') return true;
-  return isWorkflowPortCompatible({
-    sourceDataType: outputNode.dataType,
-    targetAcceptedTypes: [targetPort.dataType],
-  });
-}
-
-export function wouldCreateCycle(
-  edges: WorkflowEdge[],
-  fromId: string,
-  toId: string,
-): boolean {
-  return wouldCreateWorkflowCycle(
-    edges.map((edge) => ({
-      id: edge.id,
-      sourceNodeId: edge.from,
-      sourceOutputKey: edge.fromPort,
-      targetNodeId: edge.to,
-      targetInputKey: edge.toPort,
-    })),
-    fromId,
-    toId,
-  );
-}
+// isConnectionCompatible / wouldCreateCycle 已下沉到 @ai-canvas/workflow-core，
+// 由 apps/web/src/domain/edge-validation.ts 通过 tryValidateEdge 统一使用；本文件不再暴露判定入口。
 
 export function findPortAtPosition(
   nodes: WorkflowNode[],

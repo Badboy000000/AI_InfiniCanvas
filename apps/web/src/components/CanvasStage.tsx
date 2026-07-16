@@ -6,11 +6,12 @@ import {
   getMiniMapViewportRect,
   getOutputPortAnchor,
   getPortAnchor,
-  isConnectionCompatible,
-  wouldCreateCycle,
 } from '../lib/ports';
 import { computeWorldBounds, screenToWorld, toCanvasNodes, zoomAtPoint, type Viewport } from '../lib/viewport';
+import { describeRejection, validateEdgeAttempt } from '../domain/edge-validation';
+import { resolveSourceOutputKey, toWorkflow } from '../domain/workflow-adapter';
 import type { InputPortDef, LibraryGroup, WorkflowEdge, WorkflowNode } from '../types';
+import type { WorkflowEdgeRejection } from '@ai-canvas/workflow-core';
 
 const NODE_WIDTH = 220;
 
@@ -32,7 +33,7 @@ const bottomTools: ToolConfig[] = [
   { icon: '◎', label: '定位', createType: null },
 ];
 
-type NodePreset = Pick<WorkflowNode, 'title' | 'type' | 'category' | 'resultSummary' | 'dataType' | 'inputPorts'>;
+type NodePreset = Pick<WorkflowNode, 'title' | 'type' | 'category' | 'resultSummary' | 'dataType' | 'inputPorts' | 'nodeType'>;
 
 type ConnectionDragState = {
   fromNodeId: string;
@@ -55,6 +56,7 @@ function createNodeFromTool(toolLabel: string, index: number): WorkflowNode {
     文本输入: {
       title: '新文本节点',
       type: '文本输入',
+      nodeType: 'input.text',
       category: '输入',
       resultSummary: '双击后填写 brief 或说明',
       dataType: 'text',
@@ -63,6 +65,7 @@ function createNodeFromTool(toolLabel: string, index: number): WorkflowNode {
     图片输入: {
       title: '新图片节点',
       type: '图片输入',
+      nodeType: 'input.image',
       category: '输入',
       resultSummary: '点击后上传参考图',
       dataType: 'image',
@@ -70,19 +73,24 @@ function createNodeFromTool(toolLabel: string, index: number): WorkflowNode {
     },
     'AI 节点': {
       title: '新 AI 节点',
-      type: 'AI 节点',
-      category: '生成',
-      resultSummary: '等待接入上游输入',
+      type: 'AI 文本生成',
+      nodeType: 'ai.text_generation',
+      category: 'AI',
+      resultSummary: '等待接入上下文',
       dataType: 'ai',
-      inputPorts: [{ id: 'in-0', label: '输入', dataType: 'text' }],
+      inputPorts: [
+        { id: 'context', label: '上下文', dataType: 'text' },
+        { id: 'references', label: '参考资料', dataType: 'text' },
+      ],
     },
     输出节点: {
       title: '新输出节点',
-      type: '输出节点',
+      type: '图片导出',
+      nodeType: 'export.image',
       category: '输出',
-      resultSummary: '用于归档或导出结果',
+      resultSummary: '用于导出图片资产',
       dataType: 'file',
-      inputPorts: [{ id: 'in-0', label: '结果', dataType: 'any' as InputPortDef['dataType'] }],
+      inputPorts: [{ id: 'image', label: '待导出图片', dataType: 'image' }],
     },
   };
 
@@ -91,6 +99,7 @@ function createNodeFromTool(toolLabel: string, index: number): WorkflowNode {
     id: `${toolLabel}-${index}`,
     title: preset.title,
     type: preset.type,
+    nodeType: preset.nodeType,
     category: preset.category,
     dataType: preset.dataType,
     x: 450 + (index % 3) * 120,
@@ -141,6 +150,7 @@ export function CanvasStage({
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [connectionDrag, setConnectionDrag] = useState<ConnectionDragState | null>(null);
   const [hoveredPort, setHoveredPort] = useState<HoveredPort | null>(null);
+  const [activeRejection, setActiveRejection] = useState<WorkflowEdgeRejection | null>(null);
   const miniMapRef = useRef<HTMLDivElement | null>(null);
   const [miniMapSize, setMiniMapSize] = useState({ w: 102, h: 80 });
   const latestNodes = useRef(nodes);
@@ -200,6 +210,35 @@ export function CanvasStage({
     if (!board) return { x: 0, y: 0 };
     const rect = board.getBoundingClientRect();
     return screenToWorld(clientX - rect.left, clientY - rect.top, latestViewport.current);
+  };
+
+  /**
+   * 通过 workflow-core 做权威连线校验。返回 null 表示可连；返回结构化拒绝对象则表示不可连。
+   * 前端严禁基于自己的判断拼字符串，UI 只消费 rejection.code 映射到本地文案。
+   */
+  const validateConnection = (
+    currentNodes: WorkflowNode[],
+    currentEdges: WorkflowEdge[],
+    fromNode: WorkflowNode,
+    targetNodeId: string,
+    targetInputKey: string,
+  ): WorkflowEdgeRejection | null => {
+    // 如果任意一端没有对齐到正式节点协议 type，走 workflow-core 校验会失败于 definition_missing。
+    // 这里让画布保持向后兼容——旧原型节点在没有 nodeType 时保持原路可连（后续所有新节点都必带 nodeType）。
+    if (!fromNode.nodeType) return null;
+    const targetNode = currentNodes.find((candidate) => candidate.id === targetNodeId);
+    if (!targetNode?.nodeType) return null;
+
+    const workflow = toWorkflow(currentNodes, currentEdges);
+    return validateEdgeAttempt({
+      candidate: {
+        sourceNodeId: fromNode.id,
+        sourceOutputKey: resolveSourceOutputKey(fromNode),
+        targetNodeId,
+        targetInputKey,
+      },
+      workflow,
+    });
   };
 
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -308,10 +347,12 @@ export function CanvasStage({
       if (hit) {
         const fromNode = currentNodes.find((candidate) => candidate.id === fromNodeId);
         if (!fromNode) return;
-        const compatible = isConnectionCompatible(fromNode, hit.port) && !wouldCreateCycle(currentEdges, fromNodeId, hit.nodeId);
-        setHoveredPort({ nodeId: hit.nodeId, portId: hit.portId, port: hit.port, compatible });
+        const rejection = validateConnection(currentNodes, currentEdges, fromNode, hit.nodeId, hit.portId);
+        setHoveredPort({ nodeId: hit.nodeId, portId: hit.portId, port: hit.port, compatible: rejection === null });
+        setActiveRejection(rejection);
       } else {
         setHoveredPort(null);
+        setActiveRejection(null);
       }
     };
 
@@ -324,8 +365,8 @@ export function CanvasStage({
       if (hit) {
         const fromNode = currentNodes.find((candidate) => candidate.id === fromNodeId);
         if (fromNode) {
-          const compatible = isConnectionCompatible(fromNode, hit.port) && !wouldCreateCycle(currentEdges, fromNodeId, hit.nodeId);
-          if (compatible) {
+          const rejection = validateConnection(currentNodes, currentEdges, fromNode, hit.nodeId, hit.portId);
+          if (rejection === null) {
             const newEdge: WorkflowEdge = {
               id: `e-${fromNodeId}-${hit.nodeId}-${hit.portId}-${Date.now()}`,
               from: fromNodeId,
@@ -336,8 +377,15 @@ export function CanvasStage({
               toPort: hit.portId,
             };
             onCreateEdge(newEdge);
+            setActiveRejection(null);
+          } else {
+            setActiveRejection(rejection);
+            // 2 秒后自动消失，避免长期霸占屏幕
+            setTimeout(() => setActiveRejection((current) => (current === rejection ? null : current)), 2500);
           }
         }
+      } else {
+        setActiveRejection(null);
       }
 
       setConnectionDrag(null);
@@ -627,6 +675,13 @@ export function CanvasStage({
           </button>
         ))}
       </div>
+
+      {activeRejection && (
+        <div className="edge-rejection-toast" role="alert">
+          <strong>无法连接：</strong>
+          <span>{describeRejection(activeRejection)}</span>
+        </div>
+      )}
     </section>
   );
 }
